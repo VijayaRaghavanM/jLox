@@ -44,10 +44,20 @@ class Parser {
     }
 
     private Stmt statement() {
-        if (match(TokenType.PRINT)) {
+        if (match(TokenType.PRINT))
             return printStatement();
-        }
+        if (match(TokenType.LEFT_BRACE))
+            return block();
         return expressionStatement();
+    }
+
+    private Stmt block() {
+        List<Stmt> statements = new ArrayList<>();
+        while (!check(TokenType.RIGHT_BRACE) && !isAtEnd()) {
+            statements.add(declaration());
+        }
+        consume(TokenType.RIGHT_BRACE, "Expected a '}' after the end of a block");
+        return new Stmt.Block(statements);
     }
 
     private Stmt expressionStatement() {

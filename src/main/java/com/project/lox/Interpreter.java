@@ -8,6 +8,7 @@ import com.project.lox.Expr.Grouping;
 import com.project.lox.Expr.Literal;
 import com.project.lox.Expr.Unary;
 import com.project.lox.Expr.Variable;
+import com.project.lox.Stmt.Block;
 import com.project.lox.Stmt.Expression;
 import com.project.lox.Stmt.Print;
 import com.project.lox.Stmt.Var;
@@ -177,5 +178,23 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         Object value = evaluate(expr.value);
         memory.assign(expr.name, value);
         return value;
+    }
+
+    @Override
+    public Void visitBlockStmt(Block stmt) {
+        executeBlock(stmt.statements, new Memory(memory));
+        return null;
+    }
+
+    private void executeBlock(List<Stmt> statements, Memory memory) {
+        Memory previous = this.memory;
+        try {
+            this.memory = memory;
+            for (Stmt statement : statements) {
+                execute(statement);
+            }
+        } finally {
+            this.memory = previous;
+        }
     }
 }
