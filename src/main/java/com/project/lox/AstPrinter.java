@@ -1,5 +1,8 @@
 package com.project.lox;
 
+import com.project.lox.Expr.Assign;
+import com.project.lox.Expr.Variable;
+
 public class AstPrinter implements Expr.Visitor<String> {
 
     public static void main(String[] args) {
@@ -42,5 +45,17 @@ public class AstPrinter implements Expr.Visitor<String> {
         }
         builder.append(")");
         return builder.toString();
+    }
+
+    @Override
+    public String visitVariableExpr(Variable expr) {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public String visitAssignExpr(Assign expr) {
+        // TODO Auto-generated method stub
+        return null;
     }
 }

@@ -1,5 +1,6 @@
 package com.project.lox;
 
+import java.util.ArrayList;
 import java.util.List;
 
 class Parser {
@@ -14,19 +15,69 @@ class Parser {
         this.tokens = tokens;
     }
 
-    Expr parse() {
+    List<Stmt> parse() {
+        List<Stmt> statements = new ArrayList<>();
+        while (!isAtEnd()) {
+            statements.add(declaration());
+        }
+        return statements;
+    }
+
+    private Stmt declaration() {
         try {
-            Expr expr = expression();
-            if (!isAtEnd())
-                throw error(peek(), "Cannot parse remainder");
-            return expr;
+            if (match(TokenType.VAR))
+                return varDeclaration();
+            return statement();
         } catch (ParseError error) {
+            synchronize();
             return null;
         }
     }
 
+    private Stmt varDeclaration() {
+        Token name = consume(TokenType.IDENTIFIER, "Expected a variable name");
+        Expr initializer = null;
+        if (match(TokenType.EQUAL))
+            initializer = expression();
+        consume(TokenType.SEMICOLON, "Expected a ; after Expression");
+        return new Stmt.Var(name, initializer);
+    }
+
+    private Stmt statement() {
+        if (match(TokenType.PRINT)) {
+            return printStatement();
+        }
+        return expressionStatement();
+    }
+
+    private Stmt expressionStatement() {
+        Expr expression = expression();
+        consume(TokenType.SEMICOLON, "Expected a ; after Expression");
+        return new Stmt.Expression(expression);
+    }
+
+    private Stmt printStatement() {
+        Expr value = expression();
+        consume(TokenType.SEMICOLON, "Expected a ; after Expression");
+        return new Stmt.Print(value);
+    }
+
     private Expr expression() {
-        return equality();
+        return assignment();
+    }
+
+    private Expr assignment() {
+        Expr expr = equality();
+        if (match(TokenType.EQUAL)) {
+            Token equals = previous();
+            Expr value = assignment();
+            if (expr instanceof Expr.Variable) {
+                Token name = ((Expr.Variable) expr).name;
+                return new Expr.Assign(name, value);
+            }
+            error(equals, "Invalid assignment target");
+        }
+        return expr;
     }
 
     private Expr equality() {
@@ -81,7 +132,9 @@ class Parser {
 
     private Expr primary() {
         Expr expr = new Expr.Literal(null);
-        if (match(TokenType.TRUE))
+        if (match(TokenType.IDENTIFIER)) {
+            return new Expr.Variable(previous());
+        } else if (match(TokenType.TRUE))
             expr = new Expr.Literal(true);
         else if (match(TokenType.FALSE))
             expr = new Expr.Literal(false);

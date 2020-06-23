@@ -6,8 +6,6 @@ import java.util.Arrays;
 import java.util.List;
 
 public class GenerateAst {
-    static List<String> types = Arrays.asList("Binary: Expr left, Token operator, Expr right",
-            "Grouping: Expr expression", "Literal: Object value", "Unary: Token operator, Expr right");
 
     public static void main(String[] args) throws IOException {
         if (args.length != 1) {
@@ -15,10 +13,18 @@ public class GenerateAst {
             System.exit(1);
         }
         String outputDir = args[0];
-        defineAst(outputDir, "Expr");
+        List<String> expressions = Arrays.asList("Binary: Expr left, Token operator, Expr right",
+                "Grouping: Expr expression", "Literal: Object value", "Unary: Token operator, Expr right",
+                "Variable: Token name", "Assign: Token name, Expr value");
+        defineAst(outputDir, "Expr", expressions);
+
+        List<String> statements = Arrays.asList("Expression: Expr expression", "Print: Expr expression",
+                "Var: Token name, Expr initializer");
+        defineAst(outputDir, "Stmt", statements);
+
     }
 
-    private static void defineAst(String outputDir, String baseName) throws IOException {
+    private static void defineAst(String outputDir, String baseName, List<String> types) throws IOException {
         String path = outputDir + "/" + baseName + ".java";
         PrintWriter writer = new PrintWriter(path, "UTF-8");
         writer.println("package com.project.lox;");
@@ -27,7 +33,7 @@ public class GenerateAst {
         writer.println();
         writer.println("abstract class " + baseName + " {");
         writer.println("    abstract <R> R accept(Visitor<R> visitor);");
-        defineVisitor(writer, baseName);
+        defineVisitor(writer, baseName, types);
         // The AST classes
         for (String type : types) {
             String className = type.split(":")[0].trim();
@@ -39,7 +45,7 @@ public class GenerateAst {
         writer.close();
     }
 
-    private static void defineVisitor(PrintWriter writer, String baseName) {
+    private static void defineVisitor(PrintWriter writer, String baseName, List<String> types) {
         writer.println("    interface Visitor<R> {");
         for (String type : types) {
             String typeName = type.split(":")[0].trim();

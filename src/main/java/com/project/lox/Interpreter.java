@@ -1,20 +1,32 @@
 package com.project.lox;
 
+import java.util.List;
+
+import com.project.lox.Expr.Assign;
 import com.project.lox.Expr.Binary;
 import com.project.lox.Expr.Grouping;
 import com.project.lox.Expr.Literal;
 import com.project.lox.Expr.Unary;
-import com.project.lox.Expr.Visitor;
+import com.project.lox.Expr.Variable;
+import com.project.lox.Stmt.Expression;
+import com.project.lox.Stmt.Print;
+import com.project.lox.Stmt.Var;
 
-public class Interpreter implements Visitor<Object> {
+public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
+    private Memory memory = new Memory();
 
-    void interpret(Expr expression) {
+    void interpret(List<Stmt> statements) {
         try {
-            Object value = evaluate(expression);
-            System.out.println(stringify(value));
+            for (Stmt statement : statements) {
+                execute(statement);
+            }
         } catch (RuntimeError error) {
             Lox.runtimeError(error);
         }
+    }
+
+    private void execute(Stmt statement) {
+        statement.accept(this);
     }
 
     private String stringify(Object value) {
@@ -130,5 +142,40 @@ public class Interpreter implements Visitor<Object> {
 
     private Object evaluate(Expr expr) {
         return expr.accept(this);
+    }
+
+    @Override
+    public Void visitExpressionStmt(Expression stmt) {
+        evaluate(stmt.expression);
+        return null;
+    }
+
+    @Override
+    public Void visitPrintStmt(Print stmt) {
+        Object value = evaluate(stmt.expression);
+        System.out.println(stringify(value));
+        return null;
+    }
+
+    @Override
+    public Void visitVarStmt(Var stmt) {
+        Object value = null;
+        if (stmt.initializer != null) {
+            value = evaluate(stmt.initializer);
+        }
+        memory.define(stmt.name.lexeme, value);
+        return null;
+    }
+
+    @Override
+    public Object visitVariableExpr(Variable expr) {
+        return memory.get(expr.name);
+    }
+
+    @Override
+    public Object visitAssignExpr(Assign expr) {
+        Object value = evaluate(expr.value);
+        memory.assign(expr.name, value);
+        return value;
     }
 }

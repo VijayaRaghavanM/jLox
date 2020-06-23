@@ -47,31 +47,10 @@ public class Lox {
         Scanner scanner = new Scanner(source);
         List<Token> tokens = scanner.scanTokens();
         Parser parser = new Parser(tokens);
-        Expr expression = parser.parse();
-        printTokens(tokens);
+        List<Stmt> statements = parser.parse();
         if (hadError)
             return;
-        printAST(expression);
-        printOutput(expression);
-    }
-
-    private static void printOutput(Expr expression) {
-        System.out.println("Output:");
-        interpreter.interpret(expression);
-        System.out.println();
-    }
-
-    private static void printAST(Expr expression) {
-        System.out.println("AST:");
-        System.out.println(new AstPrinter().print(expression));
-        System.out.println();
-    }
-
-    private static void printTokens(List<Token> tokens) {
-        System.out.println("Tokens List:");
-        for (Token token : tokens)
-            System.out.println(token);
-        System.out.println();
+        interpreter.interpret(statements);
     }
 
     static void error(int line, String message) {
