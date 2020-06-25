@@ -6,12 +6,15 @@ import com.project.lox.Expr.Assign;
 import com.project.lox.Expr.Binary;
 import com.project.lox.Expr.Grouping;
 import com.project.lox.Expr.Literal;
+import com.project.lox.Expr.Logical;
 import com.project.lox.Expr.Unary;
 import com.project.lox.Expr.Variable;
 import com.project.lox.Stmt.Block;
 import com.project.lox.Stmt.Expression;
+import com.project.lox.Stmt.If;
 import com.project.lox.Stmt.Print;
 import com.project.lox.Stmt.Var;
+import com.project.lox.Stmt.While;
 
 public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     private Memory memory = new Memory();
@@ -196,5 +199,32 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         } finally {
             this.memory = previous;
         }
+    }
+
+    @Override
+    public Void visitIfStmt(If stmt) {
+        if (isTruthy(evaluate(stmt.condition))) {
+            execute(stmt.thenBranch);
+        } else if (stmt.elseBranch != null) {
+            execute(stmt.elseBranch);
+        }
+        return null;
+    }
+
+    @Override
+    public Object visitLogicalExpr(Logical expr) {
+        Object left = evaluate(expr.left);
+        if ((expr.operator.type == TokenType.OR && isTruthy(left)
+                || (expr.operator.type == TokenType.AND && !isTruthy(left))))
+            return left;
+        return evaluate(expr.right);
+    }
+
+    @Override
+    public Void visitWhileStmt(While stmt) {
+        while (isTruthy(evaluate(stmt.condition))) {
+            execute(stmt.body);
+        }
+        return null;
     }
 }
