@@ -5,13 +5,33 @@ import java.util.List;
 abstract class Stmt {
     abstract <R> R accept(Visitor<R> visitor);
     interface Visitor<R> {
+        R visitFunctionStmt(Function stmt);
         R visitBlockStmt(Block stmt);
         R visitExpressionStmt(Expression stmt);
         R visitPrintStmt(Print stmt);
         R visitVarStmt(Var stmt);
         R visitIfStmt(If stmt);
         R visitWhileStmt(While stmt);
+        R visitReturnStmt(Return stmt);
     }
+    static class Function extends Stmt {
+
+    @Override
+    <R> R accept(Visitor<R> visitor) {
+        return visitor.visitFunctionStmt(this);
+    }
+
+        final Token name;
+        final List<Token> params;
+        final List<Stmt> body;
+
+        Function(Token name, List<Token> params, List<Stmt> body) {
+            this.name = name;
+            this.params = params;
+            this.body = body;
+        }
+    }
+
     static class Block extends Stmt {
 
     @Override
@@ -101,6 +121,22 @@ abstract class Stmt {
         While(Expr condition, Stmt body) {
             this.condition = condition;
             this.body = body;
+        }
+    }
+
+    static class Return extends Stmt {
+
+    @Override
+    <R> R accept(Visitor<R> visitor) {
+        return visitor.visitReturnStmt(this);
+    }
+
+        final Token keyword;
+        final Expr value;
+
+        Return(Token keyword, Expr value) {
+            this.keyword = keyword;
+            this.value = value;
         }
     }
 
