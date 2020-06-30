@@ -26,6 +26,8 @@ class Parser {
 
     private Stmt declaration() {
         try {
+            if (match(TokenType.CLASS))
+                return classDeclaration();
             if (match(TokenType.FUN))
                 return function("function");
             if (match(TokenType.VAR))
@@ -37,7 +39,24 @@ class Parser {
         }
     }
 
-    private Stmt function(String kind) {
+    private Stmt classDeclaration() {
+        Token name = consume(TokenType.IDENTIFIER, "Expected class name");
+        Expr.Variable superclass = null;
+        if (match(TokenType.LESS)) {
+            consume(TokenType.IDENTIFIER, "Expected the name of the superclass");
+            superclass = new Expr.Variable(previous());
+        }
+        consume(TokenType.LEFT_BRACE, "Expected '{' before class body");
+        List<Stmt.Function> methods = new ArrayList<>();
+        while (!check(TokenType.RIGHT_BRACE) && !isAtEnd()) {
+            methods.add(function("method"));
+        }
+
+        consume(TokenType.RIGHT_BRACE, "Expected '}' after class body");
+        return new Stmt.Class(name, superclass, methods);
+    }
+
+    private Stmt.Function function(String kind) {
         Token name = consume(TokenType.IDENTIFIER, "Expect " + kind + " name");
         consume(TokenType.LEFT_PAREN, "Expect '(' after " + kind + " name");
         List<Token> parameters = new ArrayList<>();
@@ -176,6 +195,10 @@ class Parser {
             if (expr instanceof Expr.Variable) {
                 Token name = ((Expr.Variable) expr).name;
                 return new Expr.Assign(name, value);
+            } else if (expr instanceof Expr.Get) {
+                Expr.Get get = (Expr.Get) expr;
+                Expr.Set set = new Expr.Set(get.object, get.name, value);
+                return set;
             }
             error(equals, "Invalid assignment target");
         }
@@ -257,6 +280,9 @@ class Parser {
         while (true) {
             if (match(TokenType.LEFT_PAREN)) {
                 expr = finishCall(expr);
+            } else if (match(TokenType.DOT)) {
+                Token name = consume(TokenType.IDENTIFIER, "Expect property name after '.'");
+                expr = new Expr.Get(expr, name);
             } else {
                 break;
             }
@@ -282,6 +308,13 @@ class Parser {
         Expr expr = new Expr.Literal(null);
         if (match(TokenType.IDENTIFIER)) {
             return new Expr.Variable(previous());
+        } else if (match(TokenType.THIS)) {
+            return new Expr.This(previous());
+        } else if (match(TokenType.SUPER)) {
+            Token keyword = previous();
+            consume(TokenType.DOT, "Expected '.' after super");
+            Token method = consume(TokenType.IDENTIFIER, "Expected superclass method name");
+            return new Expr.Super(keyword, method);
         } else if (match(TokenType.TRUE))
             expr = new Expr.Literal(true);
         else if (match(TokenType.FALSE))

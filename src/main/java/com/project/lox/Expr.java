@@ -13,6 +13,10 @@ abstract class Expr {
         R visitAssignExpr(Assign expr);
         R visitLogicalExpr(Logical expr);
         R visitCallExpr(Call expr);
+        R visitGetExpr(Get expr);
+        R visitSetExpr(Set expr);
+        R visitThisExpr(This expr);
+        R visitSuperExpr(Super expr);
     }
     static class Binary extends Expr {
 
@@ -139,6 +143,70 @@ abstract class Expr {
             this.callee = callee;
             this.paren = paren;
             this.arguments = arguments;
+        }
+    }
+
+    static class Get extends Expr {
+
+    @Override
+    <R> R accept(Visitor<R> visitor) {
+        return visitor.visitGetExpr(this);
+    }
+
+        final Expr object;
+        final Token name;
+
+        Get(Expr object, Token name) {
+            this.object = object;
+            this.name = name;
+        }
+    }
+
+    static class Set extends Expr {
+
+    @Override
+    <R> R accept(Visitor<R> visitor) {
+        return visitor.visitSetExpr(this);
+    }
+
+        final Expr object;
+        final Token name;
+        final Expr value;
+
+        Set(Expr object, Token name, Expr value) {
+            this.object = object;
+            this.name = name;
+            this.value = value;
+        }
+    }
+
+    static class This extends Expr {
+
+    @Override
+    <R> R accept(Visitor<R> visitor) {
+        return visitor.visitThisExpr(this);
+    }
+
+        final Token keyword;
+
+        This(Token keyword) {
+            this.keyword = keyword;
+        }
+    }
+
+    static class Super extends Expr {
+
+    @Override
+    <R> R accept(Visitor<R> visitor) {
+        return visitor.visitSuperExpr(this);
+    }
+
+        final Token keyword;
+        final Token method;
+
+        Super(Token keyword, Token method) {
+            this.keyword = keyword;
+            this.method = method;
         }
     }
 

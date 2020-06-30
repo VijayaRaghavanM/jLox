@@ -2,7 +2,11 @@ package com.project.lox;
 
 import com.project.lox.Expr.Assign;
 import com.project.lox.Expr.Call;
+import com.project.lox.Expr.Get;
 import com.project.lox.Expr.Logical;
+import com.project.lox.Expr.Set;
+import com.project.lox.Expr.Super;
+import com.project.lox.Expr.This;
 import com.project.lox.Expr.Variable;
 
 public class AstPrinter implements Expr.Visitor<String> {
@@ -69,6 +73,30 @@ public class AstPrinter implements Expr.Visitor<String> {
 
     @Override
     public String visitCallExpr(Call expr) {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public String visitGetExpr(Get expr) {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public String visitSetExpr(Set expr) {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public String visitThisExpr(This expr) {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public String visitSuperExpr(Super expr) {
         // TODO Auto-generated method stub
         return null;
     }

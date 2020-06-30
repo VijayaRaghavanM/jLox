@@ -17,13 +17,17 @@ public class GenerateAst {
                 "Grouping: Expr expression", "Literal: Object value", "Unary: Token operator, Expr right",
                 "Variable: Token name", "Assign: Token name, Expr value",
                 "Logical: Expr left, Token operator, Expr right",
-                "Call: Expr callee, Token paren, List<Expr> arguments");
+                "Call: Expr callee, Token paren, List<Expr> arguments", "Get: Expr object, Token name",
+                "Set: Expr object, Token name, Expr value", "This: Token keyword",
+                "Super: Token keyword, Token method");
         defineAst(outputDir, "Expr", expressions);
 
         List<String> statements = Arrays.asList("Function: Token name, List<Token> params, List<Stmt> body",
-                "Block: List<Stmt> statements", "Expression: Expr expression", "Print: Expr expression",
-                "Var: Token name, Expr initializer", "If: Expr condition, Stmt thenBranch, Stmt elseBranch",
-                "While: Expr condition, Stmt body", "Return: Token keyword, Expr value");
+                "Block: List<Stmt> statements",
+                "Class: Token name, Expr.Variable superclass, List<Stmt.Function> methods",
+                "Expression: Expr expression", "Print: Expr expression", "Var: Token name, Expr initializer",
+                "If: Expr condition, Stmt thenBranch, Stmt elseBranch", "While: Expr condition, Stmt body",
+                "Return: Token keyword, Expr value");
         defineAst(outputDir, "Stmt", statements);
 
     }

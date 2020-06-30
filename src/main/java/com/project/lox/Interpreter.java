@@ -1,17 +1,24 @@
 package com.project.lox;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.project.lox.Expr.Assign;
 import com.project.lox.Expr.Binary;
 import com.project.lox.Expr.Call;
+import com.project.lox.Expr.Get;
 import com.project.lox.Expr.Grouping;
 import com.project.lox.Expr.Literal;
 import com.project.lox.Expr.Logical;
+import com.project.lox.Expr.Set;
+import com.project.lox.Expr.Super;
+import com.project.lox.Expr.This;
 import com.project.lox.Expr.Unary;
 import com.project.lox.Expr.Variable;
 import com.project.lox.Stmt.Block;
+import com.project.lox.Stmt.Class;
 import com.project.lox.Stmt.Expression;
 import com.project.lox.Stmt.Function;
 import com.project.lox.Stmt.If;
@@ -23,6 +30,7 @@ import com.project.lox.Stmt.While;
 public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     Memory globals = new Memory();
     private Memory memory = globals;
+    private final Map<Expr, Integer> locals = new HashMap<>();
 
     Interpreter() {
         globals.define("clock", new LoxCallable() {
@@ -198,13 +206,28 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
 
     @Override
     public Object visitVariableExpr(Variable expr) {
-        return memory.get(expr.name);
+        return lookupVariable(expr.name, expr);
+    }
+
+    private Object lookupVariable(Token name, Expr expr) {
+        Integer distance = locals.get(expr);
+        if (distance != null) {
+            return memory.getAt(distance, name.lexeme);
+        } else {
+            return globals.get(name);
+        }
+
     }
 
     @Override
     public Object visitAssignExpr(Assign expr) {
         Object value = evaluate(expr.value);
-        memory.assign(expr.name, value);
+        Integer distance = locals.get(expr);
+        if (distance != null) {
+            memory.assignAt(distance, expr.name, value);
+        } else {
+            globals.assign(expr.name, value);
+        }
         return value;
     }
 
@@ -273,7 +296,7 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
 
     @Override
     public Void visitFunctionStmt(Function stmt) {
-        LoxFunction function = new LoxFunction(stmt, memory);
+        LoxFunction function = new LoxFunction(stmt, memory, false);
         memory.define(stmt.name.lexeme, function);
         return null;
     }
@@ -284,6 +307,74 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         if (stmt.value != null)
             value = evaluate(stmt.value);
         throw new Return(value);
+    }
+
+    public void resolve(Expr expr, int depth) {
+        locals.put(expr, depth);
+    }
+
+    @Override
+    public Void visitClassStmt(Class stmt) {
+        Object superclass = null;
+        if (stmt.superclass != null) {
+            superclass = evaluate(stmt.superclass);
+            if (!(superclass instanceof LoxClass)) {
+                throw new RuntimeError(stmt.superclass.name, "Superclass must be a class");
+            }
+        }
+        memory.define(stmt.name.lexeme, null);
+        if (stmt.superclass != null) {
+            memory = new Memory(memory);
+            memory.define("super", superclass);
+        }
+        Map<String, LoxFunction> methods = new HashMap<>();
+        for (Stmt.Function method : stmt.methods) {
+            LoxFunction function = new LoxFunction(method, memory, method.name.lexeme.equals("init"));
+            methods.put(method.name.lexeme, function);
+        }
+        LoxClass cls = new LoxClass(stmt.name.lexeme, (LoxClass) superclass, methods);
+        if (superclass != null) {
+            memory = memory.enclosing;
+        }
+        memory.assign(stmt.name, cls);
+        return null;
+    }
+
+    @Override
+    public Object visitGetExpr(Get expr) {
+        Object object = evaluate(expr.object);
+        if (object instanceof LoxInstance) {
+            return ((LoxInstance) object).get(expr.name);
+        }
+        throw new RuntimeError(expr.name, "Only insances have properties");
+    }
+
+    @Override
+    public Object visitSetExpr(Set expr) {
+        Object object = evaluate(expr.object);
+        if (!(object instanceof LoxInstance)) {
+            throw new RuntimeError(expr.name, "Only instances have fields");
+        }
+        Object value = evaluate(expr.value);
+        ((LoxInstance) object).set(expr.name, value);
+        return value;
+    }
+
+    @Override
+    public Object visitThisExpr(This expr) {
+        return lookupVariable(expr.keyword, expr);
+    }
+
+    @Override
+    public Object visitSuperExpr(Super expr) {
+        int distance = locals.get(expr);
+        LoxClass superclass = (LoxClass) memory.getAt(distance, "super");
+        LoxInstance object = (LoxInstance) memory.getAt(distance - 1, "this");
+        LoxFunction method = superclass.findMethod(expr.method.lexeme);
+        if (method == null) {
+            throw new RuntimeError(expr.method, "Undefined property '" + expr.method.lexeme + "'");
+        }
+        return method.bind(object);
     }
 
 }
